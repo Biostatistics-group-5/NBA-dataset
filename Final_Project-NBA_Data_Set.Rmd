@@ -1,0 +1,280 @@
+---
+title: "Final_Project-NBA_Data_Set"
+author: "Amir Elbahnasawi(AE1142)"
+date: "2022-12-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#load library
+library(dplyr,quietly = T)
+library(RColorBrewer,quietly = T)
+#Mute warnings
+options(warn = - 1)     
+#read in data
+nba=read.csv("ppg2008.csv",header=TRUE)
+#rename columns to words to make it easier on the eyes
+nba = nba %>% 
+        rename("Min" = "MIN",
+               "Pts" = "PTS",
+               "Goals" = "FGM",
+               "Goals_Att" = "FGA",
+               "GoalP" = "FGP",
+               "Throws" = "FTM",
+               "Throws_Att" = "FTA",
+               "ThrowP" = "FTP",
+               "x3ptrs" = "X3PM",
+               "x3ptrs_Att" = "X3PA",
+               "x3ptrsP" = "X3PP",
+               "Off_Rebds" = "ORB",
+               "Total_Rebds" = "TRB",
+               "Asts" = "AST",
+               "Steals" = "STL",
+               "Blocks" = "BLK",
+               "Turn_Over" = "TO",
+               "Fouls" = "PF",
+               "Games" = "G")
+#Make a copy of the nba data with the name column as row names
+bnba=nba
+row.names(bnba)=nba$Name
+bnba$Name=NULL
+#Make a basic heat map with no orders to see where players stand
+bnbam=data.matrix(bnba)
+bnbah=heatmap(bnbam, Rowv=NA, Colv=NA, col = brewer.pal(9, "YlOrRd"), scale="column", margins=c(5.3,4))
+```
+
+```{r}
+#load libraries
+library(ggplot2,quietly = T)
+library(reshape2,quietly = T)
+library(plyr,quietly = T)
+library(scales,quietly = T)
+#create a gradient tile plot to highlight certain columns of interest
+#first lets visualize the players ordered by their Free Throw %
+nba$Name=with(nba,reorder(Name,ThrowP))
+mnba=melt(nba)
+mnba=ddply(mnba,.(variable),transform,rescale=rescale(value))
+tnba=ggplot(mnba,aes(variable,Name))+
+  geom_tile(aes(fill=rescale),colour="Black")+
+  scale_fill_gradient(low="Black",high="Cyan")+
+  ggtitle("Scaling Based on Free Throw Precentage")+
+  xlab("Ranking Variables") + 
+  ylab("Player Name")+
+  theme(axis.text=element_text(size=3.9,face="bold"),
+        axis.title=element_text(size=10,face="bold"))
+tnba
+#Now lets visualize the players ordered by their Total Rebounds
+nba$Name=with(nba,reorder(Name,Total_Rebds))
+mnba=melt(nba)
+mnba=ddply(mnba,.(variable),transform,rescale=rescale(value))
+trnba=ggplot(mnba,aes(variable,Name))+
+  geom_tile(aes(fill=rescale),colour="Black")+
+  scale_fill_gradient(low="Black",high="green")+
+  ggtitle("Scaling Based on Total Rebounds")+
+  xlab("Ranking Variables") + 
+  ylab("Player Name")+
+  theme(axis.text=element_text(size=3.9,face="bold"),
+        axis.title=element_text(size=10,face="bold"))
+trnba
+#Now lets visualize the players ordered by their Field Goal %
+nba$Name=with(nba,reorder(Name,GoalP))
+mnba=melt(nba)
+mnba=ddply(mnba,.(variable),transform,rescale=rescale(value))
+gnba=ggplot(mnba,aes(variable,Name))+
+  geom_tile(aes(fill=rescale),colour="Black")+
+  scale_fill_gradient(low="Black",high="Purple")+
+  ggtitle("Scaling Based on Field Goal Percentage")+
+  xlab("Ranking Variables") + 
+  ylab("Player Name")+
+  theme(axis.text=element_text(size=3.9,face="bold"),
+        axis.title=element_text(size=10,face="bold"))
+gnba
+#Now lets visualize the players ordered by their offense using Personal Fouls as a proxy
+nba$Name=with(nba,reorder(Name,Fouls))
+mnba=melt(nba)
+mnba=ddply(mnba,.(variable),transform,rescale=rescale(value))
+fnba=ggplot(mnba,aes(variable,Name))+
+  geom_tile(aes(fill=rescale),colour="Black")+
+  scale_fill_gradient(low="Black",high="red")+
+  ggtitle("Scaling Based on Total Personal Fouls")+
+  xlab("Ranking Variables") +  
+  ylab("Player Name")+
+  theme(axis.text=element_text(size=3.9,face="bold"),
+        axis.title=element_text(size=10,face="bold"))
+fnba
+#Now lets visualize the players ordered by their Turn Over
+nba$Name=with(nba,reorder(Name,Turn_Over))
+mnba=melt(nba)
+mnba=ddply(mnba,.(variable),transform,rescale=rescale(value))
+tonba=ggplot(mnba,aes(variable,Name))+
+  geom_tile(aes(fill=rescale),colour="Black")+
+  scale_fill_gradient(low="Black",high="orange")+
+  ggtitle("Scaling Based on Total Turn Overs")+
+  xlab("Ranking Variables") + 
+  ylab("Player Name")+
+  theme(axis.text=element_text(size=3.9,face="bold"),
+        axis.title=element_text(size=10,face="bold"))
+tonba
+#Now lets visualize the players ordered by their experience using Games as a proxy
+nba$Name=with(nba,reorder(Name,Games))
+mnba=melt(nba)
+mnba=ddply(mnba,.(variable),transform,rescale=rescale(value))
+gnba=ggplot(mnba,aes(variable,Name))+
+  geom_tile(aes(fill=rescale),colour="Black")+
+  scale_fill_gradient(low="Black",high="steelblue2")+
+  ggtitle("Scaling Based on Games")+
+  xlab("Ranking Variables") + 
+  ylab("Player Name")+
+  theme(axis.text=element_text(size=3.9,face="bold"),
+        axis.title=element_text(size=10,face="bold"))
+gnba
+```
+```{r}
+#Star graph from the same 6 stats
+stars(nba[,c(2,7,10,16,20,21)],
+      labels=as.character(nba[,1]),
+      flip.labels=FALSE,
+      key.loc=c(12.6,14.0),
+      ncol=10,
+      cex=0.5,
+      col.lines =1:nrow(nba),
+      lwd = 2)
+```
+
+```{r}
+#Create a data frame with the top 10 players based on each category
+tps = data.frame(Throw_Based=c("Ray Allen","Chauncey Billups","Maurice Williams",
+                               "Dirk Nowitzki","David West","Jason Terry","O.J. Mayo",
+                               "Danny Granger","Jamal Crawford","Chris Paul"),
+                 Rbd_Based=c("Dwight Howard","Al Jefferson","Tim Duncan",
+                             "Zachary Randolph","Chris Bosh","Yao Ming","Pau Gasol",
+                             "Antwan Jamison","David West","Dirk Nowitzki"),
+                 Goal_Based=c("Shaquille O'neal","Dwight Howard","Pau Gasol",
+                              "Yao Ming","Amare Stoudemire","Tony Parker","Tim Duncan",
+                              "Chris Paul","Al Jefferson","Dwyane Wade"),
+                 Foul_Based=c("Corey Maggette","Shaquille O'neal","Dwight Howard",
+                              "Yao Ming","Amare Stoudemire","Danny Granger","Al Harrington",
+                              "Richard Jefferson","Camelo Anthony","Vince Carter"),
+                 Turn_Over_Based=c("Stephen Jackson","Dwyane Wade","Deron Williams",
+                              "Caron Butler","Devin Harris","Dwight Howard","Yao Ming",
+                              "Camelo Anthony","Chris Paul","Kevin Durant"),
+                 Game_Based=c("O.J. Mayo","Andre Igoudala","Kobe Bryant",
+                              "Ben Gordon","Richard Jefferson","Lebron James","Paul Pierce",
+                              "Maurice Williams","Dirk Nowitzki","Pau Gasol"))
+tps
+```
+
+```{r}
+#Put all the top player names into a vector 
+Top_Players_Based_on_Frequency=as.vector(t(tps))
+#Find out who the top 5 repeated names are
+sort(table(Top_Players_Based_on_Frequency),decreasing=TRUE)[1:17]
+```
+
+```{r}
+#New Data frame with players who have frequency of greater than 2 + Lebron James and Kevin Durant
+Top_nba=nba[c(25,29,9,4,36,2,6),]
+#Only look at columns of interest
+Top_nba=Top_nba[c(1,7,10,16,20,21)]
+mtnba=melt(Top_nba)
+ 
+#Plot a comparison of out toppers plus Lebron James and Kevin Durant
+Toppers = mtnba %>%
+  ggplot(aes(x = Name, 
+             y = value,
+             label=variable)) +
+  geom_point(aes(fill = variable), 
+             size = 3, 
+             color = 'black', 
+             shape = 21) +
+  theme_dark()+
+  labs(title = "Frequent Player Variable Comparison")
+Toppers
+```
+
+```{r}
+#New Data frame with players who have frequency of greater than 2 + Lebron James and Kevin Durant
+Top_nba=nba[c(25,29,9,4,36,2,6),]
+#Only look at columns of interest minus number of total rebounds
+Topmg_nba=Top_nba[c(1,7,10,20,21)]
+mtnba=melt(Topmg_nba)
+ 
+#Plot a comparison of out toppers plus Lebron James and Kevin Durant
+Toppersmg = mtnba %>%
+  ggplot(aes(x = Name, 
+             y = value,
+             label=variable)) +
+  geom_point(aes(fill = variable), 
+             size = 3, 
+             color = 'black', 
+             shape = 21) +
+  theme_dark()+
+  labs(title = "Frequent Player Variable Comparison")
+Toppersmg
+```
+
+```{r}
+#Star comparison of out toppers plus Lebron James and Kevin Durant
+snba=nba[c(25,29,9,4,36,2,6),c(1,2,7,10,16,20,21)]
+star8=stars(snba[,2:7],
+      labels=as.character(snba[,1]),
+      flip.labels=FALSE,
+      key.loc=c(9.5,5),
+      ncol=7,
+      cex=0.6,
+      col.lines = c("blue","yellow","green","red","cyan","purple","orange"),
+      lwd = 3)
+```
+
+```{r}
+#load libraries
+library(devtools,quietly = T)
+library(ggbiplot,quietly = T)
+#make name column into row names
+nbi=nba[,c(2,7,10,16,20,21)]
+rownames(nbi)=nba[,1]
+#comparative analysis of stats that can be used to determine the best player
+Top_Player_Stats_Comparatives=prcomp(nbi,center=TRUE,scale.=TRUE)
+labels=nba$Name
+#print(Top_Player_Stats_Comparatives)
+#plot(Top_Player_Stats_Comparatives)
+#summary(Top_Player_Stats_Comparatives)
+#prediction for overall stats based on the common main stat Free Throw % 
+pre=predict(Top_Player_Stats_Comparatives,newdata=nbi)
+ggbiplot(Top_Player_Stats_Comparatives,obs.scale=1,var.scale=1,
+         groups=nba$ThrowP,ellipse=TRUE,circle=TRUE)
+```
+
+```{r}
+#read in 2019 data
+nba19=read.csv("mini-ppg2019.csv",header=TRUE)
+#look at predictions for players of interest
+pre=as.data.frame(pre)
+tags=c("Games","GoalP","ThrowP","Total_Rebds","Turn_Over","Fouls")
+colnames(pre) = tags
+pre19=pre[c(25,29,9,4,36,2,6),]
+pre19
+#star plot for 2019 data along with 2008 data to compare
+par(mfrow=c(2,1))
+star8=stars(snba[,2:7],
+      labels=as.character(snba[,1]),
+      flip.labels=FALSE,
+      key.loc=c(9.1,4.2),
+      ncol=7,
+      cex=0.6,
+      col.lines = c("blue","yellow","green","red","cyan","purple","orange"),
+      lwd = 3)
+star19=stars(nba19[,2:7],
+      labels=as.character(nba19[,1]),
+      flip.labels=FALSE,
+      key.loc=c(9.1,10),
+      ncol=7,
+      cex=0.6,
+      col.lines = c("blue","yellow","green","red","cyan","purple","orange"),
+      lwd = 3,
+      main = "2008 Stats (Top) v.s. 2019 Stats (Bottom)")
+```
